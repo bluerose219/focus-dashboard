@@ -1,0 +1,8 @@
+# 핫스팟 이름·비밀번호가 들어 있어 절대 올리지 않습니다.
+firmware/xiao_phone/secrets.h
+firmware/xiao_phone/secrets.h.h
+
+# 편집기·운영체제 임시 파일
+.vscode/
+Thumbs.db
+desktop.ini

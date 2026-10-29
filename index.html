@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>집중 환경 체크</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@500;700&display=swap">
+<link rel="stylesheet" href="style.css?v=20261029-blink">
+</head>
+<body>
+<a class="skip" href="#main">본문으로 건너뛰기</a>
+<main id="main">
+
+<header class="top">
+  <div>
+    <p class="eyebrow">PHYSICAL AI · P01 + 소리 모듈</p>
+    <h1>집중 환경 체크</h1>
+    <p class="lead">지금 이 책상이 공부하기 좋은 상태인지, 방해 요인이 소음인지, 온습도인지, 밝기인지 알려 줍니다.</p>
+  </div>
+  <span id="source" class="badge">입력 없음</span>
+</header>
+
+<section class="toolbar" aria-label="장치 연결">
+  <button id="connect" type="button">UNO USB 연결</button>
+  <button id="disconnect" type="button" class="secondary" disabled>연결 해제</button>
+  <button id="demo" type="button" class="secondary">연습 데이터 시작</button>
+  <span id="connection" role="status">연결 전</span>
+</section>
+<p id="notice" role="status">실제 장치: 소리 모듈을 추가한 P01 코드를 업로드하고 시리얼 모니터를 닫으세요. 연습 데이터는 실제 측정이 아닙니다.</p>
+
+<!-- 첫 줄: 판단 하나 (ISO 9241-110 과업 적합성) -->
+<section id="verdict" class="verdict" data-state="idle" aria-labelledby="verdict-title">
+  <svg class="v-icon" viewBox="0 0 48 48" aria-hidden="true" focusable="false">
+    <g class="i-good"><circle cx="24" cy="24" r="21"/><path d="M14 25l7 7 13-15" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></g>
+    <g class="i-warn"><path d="M24 4L45 42H3z"/><path d="M24 17v12M24 34v2" fill="none" stroke-width="5" stroke-linecap="round"/></g>
+    <g class="i-bad"><path d="M15 3h18l12 12v18L33 45H15L3 33V15z"/><path d="M17 17l14 14M31 17L17 31" fill="none" stroke-width="5" stroke-linecap="round"/></g>
+    <g class="i-unknown"><circle cx="24" cy="24" r="21"/><path d="M18 19a6 6 0 1 1 8 5.6c-1.4.6-2 1.6-2 3V29M24 35v1" fill="none" stroke-width="4.5" stroke-linecap="round"/></g>
+  </svg>
+  <div>
+    <p class="v-label">지금 판단</p>
+    <h2 id="verdict-title" role="status">연결 전</h2>
+    <p id="verdict-reason">UNO를 연결하거나 연습 데이터를 시작하세요.</p>
+  </div>
+</section>
+
+<div class="grid" aria-label="현재 측정값">
+  <article class="card">
+    <h2>소음</h2>
+    <p class="reading"><span id="sound-level">—</span></p>
+    <p>상대값 <strong id="sound" class="num">—</strong> <span class="muted">/ 1023 · dB 아님</span></p>
+    <p id="sound-th" class="muted">기준을 정하기 전입니다.</p>
+  </article>
+  <article class="card">
+    <h2>온도</h2>
+    <p class="reading"><span id="temperature" class="num">—</span><small> °C</small></p>
+    <p id="temp-state">쾌적 범위 20–26 °C</p>
+    <p id="temp-range" class="muted">10분 범위: —</p>
+  </article>
+  <article class="card">
+    <h2>습도</h2>
+    <p class="reading"><span id="humidity" class="num">—</span><small> %</small></p>
+    <p id="hum-state">쾌적 범위 40–60 %</p>
+    <p id="hum-range" class="muted">10분 범위: —</p>
+  </article>
+  <article class="card">
+    <h2>밝기</h2>
+    <p class="reading"><span id="light-level">—</span></p>
+    <p>원시값 <strong id="light" class="num">—</strong> <span class="muted">/ 1023 · 클수록 밝음 · lux 아님</span></p>
+    <p id="light-th" class="muted">기준을 정하기 전입니다.</p>
+  </article>
+</div>
+
+<section class="panel chart-panel" id="chart-panel" aria-labelledby="chart-h">
+  <div class="panel-head">
+    <h2 id="chart-h">최근 10분 · 소음과 밝기</h2>
+    <div class="legend" aria-hidden="true"><span><i class="k-sound"></i>소음 상대값</span><span><i class="k-light"></i>밝기 원시값</span></div>
+    <button id="pause" type="button" class="secondary small" aria-pressed="false">그래프 멈춤</button>
+  </div>
+  <p class="muted">두 그래프는 같은 시간 축(PC 수신 시각)을 씁니다. 점선은 내 기준입니다. 그래프 위에 마우스를 올리거나, 그래프를 선택한 뒤 좌우 화살표를 누르면 그 시각의 소음과 밝기를 함께 봅니다.</p>
+  <div class="charts">
+    <svg id="chart" viewBox="0 0 640 150" role="img" tabindex="0" aria-labelledby="chart-desc">
+      <desc id="chart-desc">최근 10분 소음 그래프. 수신 기록 없음.</desc>
+      <g id="chart-grid"></g>
+      <polyline id="line" fill="none" stroke-width="2" stroke-linejoin="round"/>
+      <circle id="dot" r="4" cx="-10" cy="-10"/>
+      <text id="sound-end" class="end-label" x="-100" y="-100"></text>
+      <line class="cross" x1="-10" x2="-10" y1="12" y2="140"/>
+      <rect class="hit" x="48" y="0" width="508" height="150"/>
+    </svg>
+    <svg id="chart-light" viewBox="0 0 640 150" role="img" tabindex="0" aria-labelledby="chart-light-desc">
+      <desc id="chart-light-desc">최근 10분 밝기 그래프. 수신 기록 없음.</desc>
+      <g id="light-grid"></g>
+      <polyline id="light-line" fill="none" stroke-width="2" stroke-linejoin="round"/>
+      <circle id="light-dot" r="4" cx="-10" cy="-10"/>
+      <text id="light-end" class="end-label" x="-100" y="-100"></text>
+      <line class="cross" x1="-10" x2="-10" y1="12" y2="122"/>
+      <rect class="hit" x="48" y="0" width="508" height="150"/>
+    </svg>
+    <div class="tip" id="chart-tip" aria-hidden="true"></div>
+  </div>
+  <p id="chart-summary">수신 기록 없음</p>
+  <p id="chart-pick" class="sr-only" role="status"></p>
+</section>
+
+<div class="columns">
+  <section class="panel" aria-labelledby="calib-h">
+    <h2 id="calib-h">“시끄럽다”의 기준 정하기</h2>
+    <p>방마다 조용할 때의 소리가 다릅니다. 조용한 상태에서 10초 동안 재고, 그 값의 몇 배부터 주의·시끄러움으로 볼지 고르세요.</p>
+    <div class="actions">
+      <button id="calib-start" type="button">조용할 때 10초 측정</button>
+      <button id="calib-cancel" type="button" class="secondary" hidden>측정 취소</button>
+      <button id="calib-reset" type="button" class="secondary">기준 지우기</button>
+    </div>
+    <progress id="calib-progress" max="10" value="0" hidden aria-label="기준 측정 진행"></progress>
+    <p id="calib-msg" role="status">아직 기준이 없습니다.</p>
+    <div class="selects">
+      <label for="k-warn">주의 단계
+        <select id="k-warn"><option value="1.5">조용할 때의 1.5배</option><option value="2" selected>조용할 때의 2배</option><option value="3">조용할 때의 3배</option></select>
+      </label>
+      <label for="k-loud">시끄러움 단계
+        <select id="k-loud"><option value="2.5">조용할 때의 2.5배</option><option value="3" selected>조용할 때의 3배</option><option value="4">조용할 때의 4배</option><option value="5">조용할 때의 5배</option></select>
+      </label>
+    </div>
+    <p class="muted">기준은 이 PC의 브라우저에만 저장됩니다.</p>
+  </section>
+  <section class="panel" aria-labelledby="light-calib-h">
+    <h2 id="light-calib-h">“어둡다”의 기준 정하기</h2>
+    <p>평소 공부할 때의 조명을 켠 상태에서 10초 동안 밝기를 재고, 그 값의 몇 % 아래로 떨어지면 어둡다고 볼지 고르세요.</p>
+    <div class="actions">
+      <button id="light-start" type="button">지금 밝기로 10초 측정</button>
+      <button id="light-cancel" type="button" class="secondary" hidden>측정 취소</button>
+      <button id="light-reset" type="button" class="secondary">기준 지우기</button>
+    </div>
+    <progress id="light-progress" max="10" value="0" hidden aria-label="밝기 기준 측정 진행"></progress>
+    <p id="light-msg" role="status">아직 기준이 없습니다.</p>
+    <div class="selects">
+      <label for="light-ratio">어두움 단계
+        <select id="light-ratio"><option value="0.5">평소 밝기의 50% 아래</option><option value="0.6" selected>평소 밝기의 60% 아래</option><option value="0.7">평소 밝기의 70% 아래</option></select>
+      </label>
+    </div>
+  </section>
+</div>
+
+<div class="columns">
+  <section class="panel" aria-labelledby="events-h">
+    <h2 id="events-h">시끄러웠던 때</h2>
+    <p class="muted">화면을 연 뒤 “시끄러움” 단계에 들어간 시각입니다. 새로고침하면 지워집니다.</p>
+    <ol id="events" class="events"><li class="muted">아직 없습니다.</li></ol>
+  </section>
+
+  <section class="panel" aria-labelledby="led-h">
+    <h2 id="led-h">LED 알림</h2>
+    <p id="led-state">보드 보고 상태: —</p>
+    <p class="muted">보드의 버튼을 누를 때마다 LED가 켜지고 꺼집니다. 화면이나 핸드폰에서 바꾼 상태에서도 그대로 반대로 바뀝니다.</p>
+    <div class="actions">
+      <button data-command="LED 1" type="button">LED 켜기</button>
+      <button data-command="LED 0" type="button">LED 끄기</button>
+      <button data-command="STOP" type="button" class="secondary">정지·LED 끄기</button>
+    </div>
+    <label class="check" for="alert-led"><input id="alert-led" type="checkbox"> 시끄러움 단계가 되면 LED 깜빡이기</label>
+    <p class="muted">시끄러움 단계 동안 LED가 1초에 4번 깜빡이고, 조용해지면 원래 상태로 돌아갑니다. 깜빡이는 중에 보드 버튼을 누르면 알림을 끕니다. 응답이 없으면 다시 보내지 않습니다.</p>
+    <p id="command-result" role="status">명령 없음</p>
+    <p class="subtle">‘보드 적용 응답’은 코드 실행 응답입니다. 실제 LED 점등은 눈으로 함께 확인하세요.</p>
+  </section>
+</div>
+
+<section class="panel" aria-labelledby="phone-h">
+  <h2 id="phone-h">핸드폰 연동 (XIAO ESP32S3)</h2>
+  <p>XIAO를 USB로 연결하면 이 화면의 판단과 값을 핸드폰으로 보냅니다. 핸드폰에서 누른 LED 명령은 이 화면을 거쳐 UNO로 전달됩니다.</p>
+  <div class="actions">
+    <button id="xiao-connect" type="button">XIAO 연결</button>
+    <button id="xiao-disconnect" type="button" class="secondary" disabled>XIAO 연결 해제</button>
+  </div>
+  <p>상태: <strong id="xiao-status" role="status">연결 전</strong></p>
+  <p>핸드폰 접속 주소: <strong id="xiao-addr" class="num">—</strong></p>
+  <p class="subtle">핸드폰은 XIAO와 같은 핫스팟을 켠 그 핸드폰에서 위 주소를 엽니다. 이 화면(탭)을 닫으면 핸드폰 값이 갱신되지 않습니다.</p>
+</section>
+
+<section class="panel" aria-labelledby="conn-h">
+  <h2 id="conn-h">연결과 입력 확인</h2>
+  <p id="inputs">버튼: — · LCD: —</p>
+  <p id="last">마지막 정상 수신: 없음</p>
+  <details><summary>통신 기록 보기</summary><pre id="log" aria-label="최근 통신 기록"></pre></details>
+</section>
+
+<footer>
+  <p>화면 파일은 이 PC의 브라우저에서 실행됩니다. 측정값은 서버로 보내지 않으며, 새로고침하면 그래프와 기록이 초기화됩니다.</p>
+</footer>
+</main>
+<script src="dashboard.js?v=20261029-blink"></script>
+</body>
+</html>
